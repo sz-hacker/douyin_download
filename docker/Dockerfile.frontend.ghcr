@@ -1,0 +1,53 @@
+# 前端 Dockerfile（使用 GitHub Container Registry 版本）
+# GitHub Container Registry (ghcr.io) 提供官方镜像，通常比 Docker Hub 更稳定
+# 使用方法：docker build -f docker/Dockerfile.frontend.ghcr -t douyin-download-frontend:latest .
+
+# 多阶段构建：构建阶段
+# 使用官方 Node.js 镜像
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# 复制 package 文件
+COPY frontend/package.json frontend/package-lock.json ./
+
+# 安装依赖
+RUN npm ci
+
+# 复制前端源代码
+COPY frontend/ ./
+
+# 构建前端应用
+# 在 Docker 环境中，前端通过 nginx 反向代理访问后端
+# 使用相对路径 /api，nginx 会代理到后端
+ARG VITE_API_BASE_URL=/api
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+# 后端服务名，用于 nginx 配置
+ARG BACKEND_SERVICE_NAME=backend
+ENV BACKEND_SERVICE_NAME=$BACKEND_SERVICE_NAME
+
+RUN npm run build
+
+# 生产阶段：使用 nginx 提供静态文件
+# 使用官方 Nginx 镜像
+FROM nginx:alpine
+
+# 安装 envsubst 用于环境变量替换
+RUN apk add --no-cache gettext
+
+# 复制构建产物到 nginx
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# 复制 nginx 配置模板
+COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
+
+# 设置环境变量默认值
+ENV BACKEND_SERVICE_NAME=backend
+
+# 暴露端口
+EXPOSE 9527
+
+# 启动 nginx（nginx 会自动处理模板文件）
+CMD ["nginx", "-g", "daemon off;"]
+

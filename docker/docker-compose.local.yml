@@ -1,0 +1,42 @@
+name: douyin_download_local
+
+services:
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend.ghcr
+    image: douyin-download-frontend:local
+    container_name: douyin-download-frontend-local
+    ports:
+      - "9527:9527"
+    depends_on:
+      - backend
+    networks:
+      - douyin-network
+    restart: unless-stopped
+    environment:
+      # 后端服务名，nginx 会使用此环境变量替换配置模板
+      - BACKEND_SERVICE_NAME=${BACKEND_SERVICE_NAME:-backend}
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend.ghcr
+    image: douyin-download-backend:local
+    container_name: douyin-download-backend-local
+    ports:
+      - "9528:9528"
+    volumes:
+      # 挂载输出目录，方便查看下载的文件
+      - ../output:/app/output
+    networks:
+      - douyin-network
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PORT=9528
+
+networks:
+  douyin-network:
+    driver: bridge
+

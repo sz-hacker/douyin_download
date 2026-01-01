@@ -1,0 +1,36 @@
+name: douyin_download
+
+services:
+  frontend:
+    image: ghcr.io/sz-hacker/douyin_download-frontend:latest
+    container_name: douyin-download-frontend
+    ports:
+      - "9527:9527"
+    depends_on:
+      - backend
+    networks:
+      - douyin-network
+    restart: unless-stopped
+    environment:
+      # 后端服务名，nginx 会使用此环境变量替换配置模板
+      - BACKEND_SERVICE_NAME=${BACKEND_SERVICE_NAME:-backend}
+
+  backend:
+    image: ghcr.io/sz-hacker/douyin_download-backend:latest
+    container_name: douyin-download-backend
+    ports:
+      - "9528:9528"
+    volumes:
+      # 挂载输出目录，方便查看下载的文件
+      - ../output:/app/output
+    networks:
+      - douyin-network
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PORT=9528
+
+networks:
+  douyin-network:
+    driver: bridge
+

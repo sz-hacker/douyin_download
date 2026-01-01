@@ -1,0 +1,86 @@
+# 后端 Dockerfile（使用 GitHub Container Registry 版本）
+# GitHub Container Registry (ghcr.io) 提供官方镜像，通常比 Docker Hub 更稳定
+# 使用方法：docker build -f docker/Dockerfile.backend.ghcr -t douyin-download-backend:latest .
+
+# 使用官方 Python 镜像
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 配置 Debian 镜像源（使用清华大学镜像，提高国内下载速度）
+# 支持 Debian 12+ 的新格式 (sources.list.d) 和旧格式 (sources.list)
+RUN if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+        sed -i 's|http://deb.debian.org|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources && \
+        sed -i 's|https://deb.debian.org|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+        sed -i 's|http://deb.debian.org|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list && \
+        sed -i 's|https://deb.debian.org|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list; \
+    fi
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    wget \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装 Playwright 浏览器依赖
+RUN apt-get update && apt-get install -y \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libatspi2.0-0 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libxshmfence1 \
+    libxss1 \
+    fonts-liberation \
+    libappindicator3-1 \
+    xdg-utils \
+    ca-certificates \
+    fonts-noto-color-emoji \
+    fonts-noto-cjk \
+    fonts-wqy-zenhei \
+    fonts-wqy-microhei \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制 requirements 文件
+COPY backend/requirements.txt .
+
+# 安装 Python 依赖（使用国内 PyPI 镜像）
+RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
+
+# 安装 Playwright 浏览器
+# 设置 Playwright 浏览器路径环境变量（必须在安装前设置）
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+# 安装 chromium 浏览器及其所有依赖（包括 headless shell）
+RUN playwright install --with-deps chromium
+
+# 复制后端源代码
+COPY backend/ ./
+
+# 创建输出目录
+RUN mkdir -p /app/output/downloads /app/output/temp_audio /app/output/temp_text
+
+# 设置环境变量，优化 Playwright 在 Docker 中的运行
+ENV DISPLAY=:99
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+# 设置 Playwright 跳过浏览器下载提示
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0
+# 优化内存和性能
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+# 暴露端口
+EXPOSE 9528
+
+# 启动应用
+CMD ["python", "main.py"]
+
