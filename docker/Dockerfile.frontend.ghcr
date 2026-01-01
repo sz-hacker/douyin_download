@@ -9,7 +9,7 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # 复制 package 文件
-COPY frontend/package*.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 
 # 安装依赖
 RUN npm ci
