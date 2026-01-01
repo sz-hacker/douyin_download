@@ -1,0 +1,14 @@
+requests>=2.31.0
+urllib3>=2.0.0
+playwright>=1.40.0
+demucs>=4.0.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+
+# 视频文字提取相关（可选）
+easyocr>=1.7.0  # OCR识别画面文字
+paddleocr>=2.7.0  # 百度OCR（中文优化）
+pytesseract>=0.3.10  # Tesseract OCR包装器
+Pillow>=10.0.0  # 图像处理（Tesseract需要）
+openai-whisper>=20231117  # 语音转文字（ASR）
+
