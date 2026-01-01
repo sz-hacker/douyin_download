@@ -3,8 +3,8 @@
 # 使用方法：docker build -f docker/Dockerfile.frontend.ghcr -t douyin-download-frontend:latest .
 
 # 多阶段构建：构建阶段
-# 使用 GitHub Container Registry 的官方 Node.js 镜像
-FROM ghcr.io/docker-library/node:18-alpine AS builder
+# 使用官方 Node.js 镜像
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
@@ -26,8 +26,8 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
 # 生产阶段：使用 nginx 提供静态文件
-# 使用 GitHub Container Registry 的官方 Nginx 镜像
-FROM ghcr.io/docker-library/nginx:alpine
+# 使用官方 Nginx 镜像
+FROM nginx:alpine
 
 # 复制构建产物到 nginx
 COPY --from=builder /app/dist /usr/share/nginx/html
