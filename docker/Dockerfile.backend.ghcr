@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get update && apt-get install -y \
     libnss3 \
     libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libatspi2.0-0 \
     libdrm2 \
     libxkbcommon0 \
     libxcomposite1 \
@@ -28,6 +30,13 @@ RUN apt-get update && apt-get install -y \
     libasound2 \
     libpango-1.0-0 \
     libcairo2 \
+    libxshmfence1 \
+    libxss1 \
+    fonts-liberation \
+    libappindicator3-1 \
+    xdg-utils \
+    ca-certificates \
+    fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制 requirements 文件
@@ -45,6 +54,10 @@ COPY backend/ ./
 
 # 创建输出目录
 RUN mkdir -p /app/output/downloads /app/output/temp_audio /app/output/temp_text
+
+# 设置环境变量，优化 Playwright 在 Docker 中的运行
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV DISPLAY=:99
 
 # 暴露端口
 EXPOSE 9528

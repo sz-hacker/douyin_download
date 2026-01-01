@@ -37,10 +37,28 @@ class EnhancedDouyinDownloader:
         logger.info(f"Analyzing URL: {url}")
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True, args=[
-                '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
-                '--disable-web-security', '--disable-features=VizDisplayCompositor'
+                '--no-sandbox', 
+                '--disable-setuid-sandbox', 
+                '--disable-dev-shm-usage',
+                '--disable-web-security', 
+                '--disable-features=VizDisplayCompositor',
+                '--disable-blink-features=AutomationControlled',
+                '--disable-extensions',
+                '--disable-gpu',
+                '--no-first-run',
+                '--no-default-browser-check',
+                '--disable-default-apps',
+                '--disable-background-networking',
+                '--disable-background-timer-throttling',
+                '--disable-renderer-backgrounding',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-ipc-flooding-protection'
             ])
-            context = await browser.new_context(user_agent=USER_AGENT, viewport={'width': 1920, 'height': 1080})
+            context = await browser.new_context(
+                user_agent=USER_AGENT, 
+                viewport={'width': 1920, 'height': 1080},
+                ignore_https_errors=True
+            )
             page = await context.new_page()
             
             video_urls, first_douyinvod_url, printed_nav = set(), None, set()
@@ -65,7 +83,8 @@ class EnhancedDouyinDownloader:
             page.on("request", handle_navigation)
             
             try:
-                await page.goto(url, wait_until="networkidle", timeout=10000)
+                # 增加超时时间到 60 秒，并改用 load 策略（更宽松）
+                await page.goto(url, wait_until="load", timeout=60000)
                 logger.debug(f"Final URL: {page.url}")
                 await asyncio.sleep(5)
                 

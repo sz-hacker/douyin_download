@@ -13,16 +13,10 @@
 <img src="docs/手机的截图.png" alt="手机端效果" width="400"/>
 
 ### 原视频演示
-<video controls width="800">
-  <source src="docs/原视频.mp4" type="video/mp4">
-  您的浏览器不支持视频标签。
-</video>
+📹 [docs/原视频.mp4](docs/原视频.mp4)
 
 ### 去人声效果演示
-<video controls width="800">
-  <source src="docs/去人声视频.mp4" type="video/mp4">
-  您的浏览器不支持视频标签。
-</video>
+📹 [docs/去人声视频.mp4](docs/去人声视频.mp4)
 
 ### 提取的文字内容
 ```
@@ -401,64 +395,15 @@ A:
 - 建议优先使用嵌入字幕提取（最快）
 - 如果视频有字幕，系统会自动优先使用字幕提取
 
-## 🐳 Docker 部署
-
-### 使用 Docker Compose（推荐）
-
-```bash
-cd docker
-docker-compose up -d --build
-```
-
-访问：
-- 前端：http://localhost:9527
-- 后端 API：http://localhost:9528
-
-### 使用预构建镜像
-
-项目使用 GitHub Actions 自动构建 Docker 镜像并推送到 GitHub Container Registry。
-
-#### 从 GitHub Container Registry 拉取
+## 🐳 使用方式
 
 ```bash
 # 拉取前端镜像
-docker pull ghcr.io/<username>/<repo-name>-frontend:latest
+docker pull ghcr.io/sz-hacker/douyin_download-frontend:latest
 
 # 拉取后端镜像
-docker pull ghcr.io/<username>/<repo-name>-backend:latest
+docker pull ghcr.io/sz-hacker/douyin_download-backend:latest
 ```
-
-#### 运行容器
-
-```bash
-# 运行前端
-docker run -d -p 9527:9527 ghcr.io/<username>/<repo-name>-frontend:latest
-
-# 运行后端（需要挂载输出目录）
-docker run -d -p 9528:9528 \
-  -v $(pwd)/output:/app/output \
-  ghcr.io/<username>/<repo-name>-backend:latest
-```
-
-### GitHub Actions 自动构建
-
-项目配置了 GitHub Actions 工作流，自动构建和推送 Docker 镜像：
-
-- **触发条件**：推送到主分支、创建标签、Pull Request
-- **镜像位置**：GitHub Container Registry (ghcr.io)
-- **详细说明**：查看 [.github/workflows/README.md](.github/workflows/README.md)（如果存在）
-
-### 本地构建
-
-```bash
-# 构建前端镜像
-docker build -f docker/Dockerfile.frontend.ghcr -t douyin-download-frontend:latest .
-
-# 构建后端镜像
-docker build -f docker/Dockerfile.backend.ghcr -t douyin-download-backend:latest .
-```
-
-更多 Docker 相关说明请查看 [docker/README.md](docker/README.md)
 
 ## 📝 开发计划
 
