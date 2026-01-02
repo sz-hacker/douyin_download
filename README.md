@@ -398,11 +398,8 @@ A:
 ## 🐳 使用方式
 
 ```bash
-# 拉取前端镜像
-docker pull ghcr.io/sz-hacker/douyin_download-frontend:latest
-
-# 拉取后端镜像
-docker pull ghcr.io/sz-hacker/douyin_download-backend:latest
+# 使用 docker-compose 启动服务（会自动拉取镜像）
+docker-compose -f docker/docker-compose.yml up -d
 ```
 
 ## 📝 开发计划
