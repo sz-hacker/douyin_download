@@ -23,21 +23,31 @@ COPY frontend/ ./
 ARG VITE_API_BASE_URL=/api
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
+# 后端服务名，用于 nginx 配置
+ARG BACKEND_SERVICE_NAME=backend
+ENV BACKEND_SERVICE_NAME=$BACKEND_SERVICE_NAME
+
 RUN npm run build
 
 # 生产阶段：使用 nginx 提供静态文件
 # 使用官方 Nginx 镜像
 FROM nginx:alpine
 
+# 安装 envsubst 用于环境变量替换
+RUN apk add --no-cache gettext
+
 # 复制构建产物到 nginx
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 复制 nginx 配置
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+# 复制 nginx 配置模板
+COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
+
+# 设置环境变量默认值
+ENV BACKEND_SERVICE_NAME=backend
 
 # 暴露端口
 EXPOSE 9527
 
-# 启动 nginx
+# 启动 nginx（nginx 会自动处理模板文件）
 CMD ["nginx", "-g", "daemon off;"]
 

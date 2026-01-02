@@ -6,6 +6,8 @@ services:
       args:
         # 使用相对路径，nginx 会通过反向代理转发到后端
         VITE_API_BASE_URL: /api
+        # 后端服务名，用于 nginx 配置（可通过环境变量覆盖）
+        BACKEND_SERVICE_NAME: ${BACKEND_SERVICE_NAME:-backend}
     container_name: douyin-download-frontend
     ports:
       - "9527:9527"
@@ -14,6 +16,9 @@ services:
     networks:
       - douyin-network
     restart: unless-stopped
+    environment:
+      # 后端服务名，nginx 会使用此环境变量替换配置模板
+      - BACKEND_SERVICE_NAME=${BACKEND_SERVICE_NAME:-backend}
 
   backend:
     build:

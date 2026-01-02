@@ -17,6 +17,7 @@ import uuid
 import time
 import sys
 import asyncio
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 from douyin_downloader import EnhancedDouyinDownloader, USER_AGENT
@@ -180,44 +181,92 @@ async def download_video(request: DownloadRequest):
     下载视频
     接收URL参数，分析页面并下载视频
     """
-    logger.info(f"收到下载请求，原始URL: {request.url}")
+    import time
+    request_start_time = time.time()
+    logger.info("=" * 60)
+    logger.info(f"收到下载请求")
+    logger.info(f"原始输入: {request.url[:200]}...")
+    logger.info(f"请求时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(request_start_time))}")
+    
     try:
         # 使用正则匹配提取 HTTP/HTTPS 地址
+        logger.debug("开始提取 URL...")
         url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+'
         matches = re.findall(url_pattern, request.url)
+        logger.debug(f"正则匹配结果: {len(matches)} 个匹配项")
         
         if not matches:
-            logger.warning(f"未找到有效的URL地址，原始输入: {request.url}")
+            logger.warning(f"✗ 未找到有效的URL地址")
+            logger.warning(f"  原始输入: {request.url}")
             raise HTTPException(status_code=400, detail="未找到有效的URL地址")
         
         # 取第一个匹配的URL
         url = matches[0].strip()
-        logger.debug(f"提取的URL: {url}")
+        logger.info(f"提取的URL: {url}")
         
         # 验证URL格式
         if not url.startswith(('http://', 'https://')):
+            original_url = url
             url = 'https://' + url
-            logger.debug(f"URL添加协议前缀: {url}")
+            logger.info(f"URL添加协议前缀: {original_url} -> {url}")
         
         logger.info(f"开始分析页面: {url}")
-        # 创建下载器实例
-        downloader = EnhancedDouyinDownloader()
+        analysis_start_time = time.time()
         
-        # 分析页面获取视频列表
-        videos = await downloader.analyze_douyin_page(url)
+        # 创建下载器实例
+        logger.debug("创建下载器实例...")
+        downloader = EnhancedDouyinDownloader()
+        logger.debug("下载器实例创建成功")
+        
+        # 分析页面获取视频列表（使用 60 秒超时）
+        try:
+            logger.info("调用 analyze_douyin_page 方法...")
+            videos = await downloader.analyze_douyin_page(url, timeout=60000)
+            analysis_time = time.time() - analysis_start_time
+            logger.info(f"页面分析完成，耗时: {analysis_time:.2f}秒")
+        except Exception as e:
+            analysis_time = time.time() - analysis_start_time
+            logger.error(f"✗ 分析页面时发生异常，耗时: {analysis_time:.2f}秒")
+            logger.error(f"  异常类型: {type(e).__name__}")
+            logger.error(f"  异常信息: {str(e)}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"分析页面失败: {str(e)}")
         
         if not videos:
-            logger.warning(f"页面分析完成，但未找到视频: {url}")
+            total_time = time.time() - request_start_time
+            logger.warning(f"✗ 页面分析完成，但未找到视频 (总耗时: {total_time:.2f}秒)")
+            logger.warning(f"  目标 URL: {url}")
+            logger.warning("  建议检查：")
+            logger.warning("    1. URL 是否正确且有效")
+            logger.warning("    2. 视频是否已被删除或设为私密")
+            logger.warning("    3. 是否需要登录才能访问")
+            logger.warning("    4. 网络连接是否正常")
+            logger.info("=" * 60)
             return DownloadResponse(
                 success=False,
-                message="未找到视频",
+                message="未找到视频，请检查 URL 是否正确或视频是否可访问",
                 videos=[]
             )
         
-        logger.info(f"页面分析完成，找到 {len(videos)} 个视频")
+        logger.info(f"✓ 页面分析成功，找到 {len(videos)} 个视频")
         
         # 提取视频链接数组
+        logger.debug("提取视频链接数组...")
         video_urls = [video.get('src', '') for video in videos if video.get('src')]
+        valid_urls_count = len([url for url in video_urls if url])
+        logger.info(f"有效视频链接数量: {valid_urls_count}/{len(video_urls)}")
+        
+        # 记录视频来源统计
+        video_types = {}
+        for video in videos:
+            vtype = video.get('type', 'unknown')
+            video_types[vtype] = video_types.get(vtype, 0) + 1
+        logger.debug("视频来源统计:")
+        for vtype, count in video_types.items():
+            logger.debug(f"  - {vtype}: {count} 个")
+        
+        total_time = time.time() - request_start_time
+        logger.info(f"✓ 请求处理完成，总耗时: {total_time:.2f}秒")
+        logger.info("=" * 60)
         
         return DownloadResponse(
             success=True,
@@ -227,9 +276,16 @@ async def download_video(request: DownloadRequest):
     
     except HTTPException:
         # 重新抛出 HTTP 异常，不记录为错误
+        total_time = time.time() - request_start_time
+        logger.warning(f"请求被拒绝，耗时: {total_time:.2f}秒")
+        logger.info("=" * 60)
         raise
     except Exception as e:
-        logger.error(f"处理请求时发生异常: {str(e)}", exc_info=True)
+        total_time = time.time() - request_start_time
+        logger.error(f"✗ 处理请求时发生未预期的异常，耗时: {total_time:.2f}秒")
+        logger.error(f"  异常类型: {type(e).__name__}")
+        logger.error(f"  异常信息: {str(e)}", exc_info=True)
+        logger.info("=" * 60)
         raise HTTPException(status_code=500, detail=f"处理请求时出错: {str(e)}")
 
 
@@ -261,18 +317,23 @@ async def proxy_video(video_url: str, request: Request):
         # URL解码
         video_url = unquote(video_url)
         
-        logger.info(f"代理视频请求: {video_url}")
+        logger.info(f"代理视频请求: {video_url[:100]}...")
+        proxy_start_time = time.time()
         
         # 设置请求头，模拟浏览器请求
         headers = get_video_headers()
+        logger.debug(f"设置请求头: User-Agent={headers.get('User-Agent', '')[:50]}...")
         
         # 从请求中获取Range头（用于视频播放的断点续传）
         range_header = request.headers.get('Range')
         if range_header:
             headers['Range'] = range_header
-            logger.debug(f"转发Range请求: {range_header}")
+            logger.info(f"转发Range请求: {range_header}")
+        else:
+            logger.debug("无Range请求头，将下载完整视频")
         
         # 发送请求获取视频流
+        logger.debug("发送HTTP请求获取视频流...")
         response = requests.get(
             video_url,
             headers=headers,
@@ -281,7 +342,10 @@ async def proxy_video(video_url: str, request: Request):
             allow_redirects=True
         )
         
+        logger.info(f"视频请求响应状态: {response.status_code}")
         response.raise_for_status()
+        logger.debug(f"响应头 Content-Type: {response.headers.get('Content-Type', 'unknown')}")
+        logger.debug(f"响应头 Content-Length: {response.headers.get('Content-Length', 'unknown')}")
         
         # 构建响应头
         response_headers = {
@@ -340,12 +404,15 @@ async def download_video_file(video_url: str, filename: Optional[str] = None):
         # URL解码
         video_url = unquote(video_url)
         
-        logger.info(f"下载视频请求: {video_url}")
+        logger.info(f"下载视频请求: {video_url[:100]}...")
+        download_start_time = time.time()
         
         # 设置请求头，模拟浏览器请求
         headers = get_video_headers()
+        logger.debug("设置下载请求头...")
         
         # 发送请求获取视频流
+        logger.debug("发送HTTP请求下载视频...")
         response = requests.get(
             video_url,
             headers=headers,
@@ -354,7 +421,10 @@ async def download_video_file(video_url: str, filename: Optional[str] = None):
             allow_redirects=True
         )
         
+        logger.info(f"视频下载响应状态: {response.status_code}")
         response.raise_for_status()
+        content_length = response.headers.get('Content-Length', 'unknown')
+        logger.info(f"视频大小: {content_length} 字节" if content_length != 'unknown' else "视频大小: 未知")
         
         # 如果没有提供文件名，从URL或Content-Disposition中提取
         if not filename:
@@ -416,36 +486,49 @@ async def process_no_vocals(video_url: str):
     处理视频，生成无背景音版本
     下载视频，去除人声，返回处理后的文件路径
     """
+    process_start_time = time.time()
+    logger.info("=" * 60)
+    logger.info("收到处理无背景音版本请求")
     try:
         video_url = unquote(video_url)
-        
-        logger.info(f"处理无背景音版本请求: {video_url}")
+        logger.info(f"视频 URL: {video_url[:100]}...")
+        logger.info(f"请求时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
         # 下载视频到临时目录
         temp_filename = f"temp_{int(time.time())}.mp4"
         temp_video_path = DOWNLOADS_DIR / temp_filename
         
-        logger.info(f"开始下载视频到: {temp_video_path}")
+        logger.info(f"开始下载视频到临时文件: {temp_video_path}")
+        download_start = time.time()
         
         # 下载视频
         download_video_to_local(video_url, temp_video_path, timeout=60)
         
-        logger.info(f"视频下载完成: {temp_video_path}")
+        download_time = time.time() - download_start
+        file_size = temp_video_path.stat().st_size if temp_video_path.exists() else 0
+        logger.info(f"✓ 视频下载完成，耗时: {download_time:.2f}秒，文件大小: {file_size / 1024 / 1024:.2f} MB")
         
         # 处理视频，生成无背景音版本
         logger.info("开始处理视频，去除人声...")
+        logger.debug("创建 VocalRemover 实例 (方法: demucs)...")
         remover = VocalRemover(method='demucs', temp_dir=str(TEMP_AUDIO_DIR))
+        logger.debug("VocalRemover 实例创建成功")
         
         # 生成输出文件名
         output_filename = f"{temp_video_path.stem}_no_vocals{temp_video_path.suffix}"
         output_path = DOWNLOADS_DIR / output_filename
+        logger.info(f"输出文件路径: {output_path}")
         
         # 处理视频
+        process_start = time.time()
+        logger.info("开始执行人声分离处理...")
         success = remover.process_video(
             str(temp_video_path),
             str(output_path),
             keep_vocals=False  # 去除人声，保留背景音乐
         )
+        process_time = time.time() - process_start
+        logger.info(f"人声分离处理完成，耗时: {process_time:.2f}秒")
         
         if not success or not output_path.exists():
             # 清理临时文件
@@ -598,22 +681,30 @@ async def process_extract_text(video_url: str, task_id: Optional[str] = None):
         # 如果嵌入字幕失败，尝试使用ASR（语音识别）
         if not success or not text_file_path:
             try:
-                logger.info("尝试使用ASR提取文字...")
+                logger.info("方法 2/3: 尝试使用ASR提取文字...")
+                logger.warning("注意: ASR处理可能需要较长时间，请耐心等待...")
                 task_progress[task_id].update({
                     "progress": 40,
                     "message": "正在使用语音识别提取文字（这可能需要几分钟）..."
                 })
                 asr_output = DOWNLOADS_DIR / f"{temp_video_path.stem}_asr.txt"
+                asr_start = time.time()
                 success = extractor.extract_with_asr(str(temp_video_path), str(asr_output), method='whisper')
+                asr_time = time.time() - asr_start
                 if success and asr_output.exists():
                     text_file_path = asr_output
-                    logger.info(f"ASR提取成功: {text_file_path}")
+                    text_size = asr_output.stat().st_size
+                    logger.info(f"✓ ASR提取成功，耗时: {asr_time:.2f}秒 ({asr_time/60:.1f}分钟)")
+                    logger.info(f"  输出文件: {text_file_path}")
+                    logger.info(f"  文件大小: {text_size} 字节")
                     task_progress[task_id].update({
                         "progress": 100,
                         "message": "语音识别提取成功"
                     })
+                else:
+                    logger.warning(f"ASR提取失败或文件不存在，耗时: {asr_time:.2f}秒")
             except Exception as e:
-                logger.warning(f"ASR提取失败: {str(e)}")
+                logger.warning(f"ASR提取时发生异常: {str(e)}", exc_info=True)
         
         # 如果还是失败，尝试OCR（优先使用PaddleOCR，对中文支持更好）
         if not success or not text_file_path:

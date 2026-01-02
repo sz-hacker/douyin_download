@@ -13,10 +13,10 @@
 <img src="docs/手机的截图.png" alt="手机端效果" width="400"/>
 
 ### 原视频演示
-📹 [docs/原视频.mp4](docs/原视频.mp4)
+📹 [docs/原视频.mp4](https://github.com/sz-hacker/douyin_download/blob/main/docs/%E5%8E%9F%E8%A7%86%E9%A2%91.mp4)
 
 ### 去人声效果演示
-📹 [docs/去人声视频.mp4](docs/去人声视频.mp4)
+📹 [docs/去人声视频.mp4](https://github.com/sz-hacker/douyin_download/blob/main/docs/%E5%8E%BB%E4%BA%BA%E5%A3%B0%E8%A7%86%E9%A2%91.mp4)
 
 ### 提取的文字内容
 ```
