@@ -13,16 +13,10 @@
 <img src="docs/手机的截图.png" alt="手机端效果" width="400"/>
 
 ### 原视频演示
-<video width="800" controls>
-  <source src="https://github.com/sz-hacker/douyin_download/raw/main/docs/%E5%8E%9F%E8%A7%86%E9%A2%91.mp4" type="video/mp4">
-  您的浏览器不支持视频播放。
-</video>
+[点击查看原视频演示](https://github.com/sz-hacker/douyin_download/raw/main/docs/%E5%8E%9F%E8%A7%86%E9%A2%91.mp4)
 
 ### 去人声效果演示
-<video width="800" controls>
-  <source src="https://github.com/sz-hacker/douyin_download/raw/main/docs/%E5%8E%BB%E4%BA%BA%E5%A3%B0%E8%A7%86%E9%A2%91.mp4" type="video/mp4">
-  您的浏览器不支持视频播放。
-</video>
+[点击查看去人声效果演示](https://github.com/sz-hacker/douyin_download/raw/main/docs/%E5%8E%BB%E4%BA%BA%E5%A3%B0%E8%A7%86%E9%A2%91.mp4)
 
 ### 提取的文字内容
 ```
