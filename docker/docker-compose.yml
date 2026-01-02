@@ -1,13 +1,6 @@
 services:
   frontend:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.frontend.ghcr
-      args:
-        # 使用相对路径，nginx 会通过反向代理转发到后端
-        VITE_API_BASE_URL: /api
-        # 后端服务名，用于 nginx 配置（可通过环境变量覆盖）
-        BACKEND_SERVICE_NAME: ${BACKEND_SERVICE_NAME:-backend}
+    image: ghcr.io/sz-hacker/douyin_download-frontend:latest
     container_name: douyin-download-frontend
     ports:
       - "9527:9527"
@@ -21,9 +14,7 @@ services:
       - BACKEND_SERVICE_NAME=${BACKEND_SERVICE_NAME:-backend}
 
   backend:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.backend.ghcr
+    image: ghcr.io/sz-hacker/douyin_download-backend:latest
     container_name: douyin-download-backend
     ports:
       - "9528:9528"
