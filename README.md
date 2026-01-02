@@ -400,6 +400,9 @@ A:
 ```bash
 # 使用 docker-compose 启动服务（会自动拉取镜像）
 docker-compose -f docker/docker-compose.yml up -d
+
+# 更新镜像（体验则无需使用）
+docker-compose -f docker/docker-compose.yml pull
 ```
 
 ## 📝 开发计划
